@@ -1,108 +1,182 @@
-/* Vaultfy category hydration. Reads only the native Twsaa /category endpoint.
- * Never requests competitor data and never interferes with cart or checkout.
+/* Vaultfy — progressive enhancement of native Twsaa category navigation.
+ * Category names and destinations always come from the live /category response.
+ * Artwork comes from the platform response (when available) or the merchant's
+ * existing homeContent/list_of_items images mapped to a matching category.
  */
 (function () {
   'use strict';
-  function onReady(callback) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', callback, { once: true });
-    } else {
-      callback();
-    }
-  }
+
+  const byId = id => document.getElementById(id);
+  const whenReady = callback => document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', callback, { once: true })
+    : callback();
 
   function pathname(href) {
-    if (!href || href.trim() === '#') return null;
+    if (!href || /^\s*(?:#|javascript:)/i.test(href)) return '';
     try {
-      var url = new URL(href, window.location.origin);
-      if (url.origin !== window.location.origin) return null;
-      if (url.pathname === '/' || url.pathname.includes('/customer/')) return null;
-      return url.pathname.replace(/\/$/, '') || '/';
-    } catch (_) {
-      return null;
+      const url = new URL(href, location.href);
+      if (url.origin !== location.origin || url.pathname === '/' || url.pathname.startsWith('/customer/')) return '';
+      return decodeURIComponent(url.pathname).replace(/\/$/, '');
+    } catch (_) { return ''; }
+  }
+
+  function categoryName(name) {
+    return (name || '').trim().replace(/\s+/g, ' ').replace(/^قسم\s+/u, '').trim().toLocaleLowerCase();
+  }
+
+  function safeImage(src) {
+    if (!src) return '';
+    try {
+      const url = new URL(src, location.href);
+      return ['https:', 'http:'].includes(url.protocol) ? url.href : '';
+    } catch (_) { return ''; }
+  }
+
+  function parseCategories(body) {
+    let response;
+    try { response = JSON.parse(body); } catch (_) { response = body; }
+    let raw = response;
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      raw = raw.categories || raw.data?.categories || raw.data || raw.html || '';
     }
+    if (Array.isArray(raw)) {
+      return raw.filter(cat => cat && cat.status !== 0).map(cat => ({
+        path: pathname(cat.url || cat.link || ('/' + (cat.url_path || cat.slug || ''))),
+        name: String(cat.name || cat.title || '').trim(),
+        image: safeImage(cat.image_url || cat.category_image_url ||
+          (cat.image && /^https?:\/\//.test(cat.image) ? cat.image : ''))
+      })).filter(cat => cat.name && cat.path);
+    }
+    const doc = new DOMParser().parseFromString(String(raw || ''), 'text/html');
+    let links = Array.from(doc.querySelectorAll('li[parent] > a'));
+    if (!links.length) links = Array.from(doc.querySelectorAll('li > a'));
+    return links.map(link => ({
+      path: pathname(link.getAttribute('href')),
+      name: (link.textContent || '').trim().replace(/\s+/g, ' '),
+      image: safeImage(link.dataset.image || link.querySelector('img')?.getAttribute('src') || '')
+    })).filter(cat => cat.path && cat.name);
   }
 
-  function categoryLinks(markup) {
-    var source = new DOMParser().parseFromString(markup, 'text/html');
-    var nodes = Array.from(source.querySelectorAll('li[parent] > a'));
-    // Fallback if the native platform returns an ordinary navigation list.
-    if (!nodes.length) nodes = Array.from(source.querySelectorAll('li > a'));
-    var seen = new Set();
-    return nodes.reduce(function (items, link) {
-      var path = pathname(link.getAttribute('href'));
-      var name = (link.textContent || '').trim().replace(/\s+/g, ' ');
-      if (!path || !name || seen.has(path)) return items;
-      seen.add(path);
-      items.push({ path: path, name: name });
-      return items;
-    }, []);
+  function mediaIndex(grid) {
+    const byPath = new Map(), byName = new Map();
+    grid.querySelectorAll('.vf-up-category-card').forEach(card => {
+      const path = pathname(card.getAttribute('href'));
+      const name = categoryName(card.querySelector('.vf-up-category-name')?.textContent);
+      const image = safeImage(card.querySelector('img')?.getAttribute('src'));
+      if (!image) return;
+      if (path) byPath.set(path, image);
+      if (name) byName.set(name, image);
+    });
+    return { byPath, byName };
   }
 
-  function categoryCard(category, previous) {
-    var anchor = document.createElement('a');
-    anchor.href = category.path;
+  function renderCard(category, image) {
+    const anchor = document.createElement('a');
     anchor.className = 'vf-up-category-card';
-    var image = document.createElement('span');
-    image.className = 'vf-up-category-image';
-    var existing = previous.get(category.path);
-    var img = existing && existing.querySelector('img');
-    if (img) {
-      var copy = img.cloneNode(false);
-      copy.loading = 'lazy';
-      copy.alt = category.name;
-      image.appendChild(copy);
+    anchor.href = category.path;
+    const poster = document.createElement('span');
+    poster.className = 'vf-up-category-poster';
+    const art = document.createElement('span');
+    art.className = 'vf-up-category-art';
+    if (image) {
+      const img = document.createElement('img');
+      img.src = image;
+      img.alt = category.name;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.addEventListener('error', () => {
+        art.classList.add('vf-up-no-image');
+        img.remove();
+      }, { once: true });
+      art.appendChild(img);
     } else {
-      var letter = document.createElement('span');
-      letter.className = 'vf-up-category-placeholder';
-      letter.textContent = category.name.replace(/^قسم\s+/, '').trim().slice(0, 1);
-      letter.setAttribute('aria-hidden', 'true');
-      image.appendChild(letter);
+      art.classList.add('vf-up-no-image');
+      art.setAttribute('aria-label', 'صورة القسم غير مضافة بعد');
     }
-    var label = document.createElement('span');
+    const callToAction = document.createElement('span');
+    callToAction.className = 'vf-up-category-cta';
+    callToAction.textContent = document.documentElement.lang === 'en' ? 'Click here' : 'اضغط هنا';
+    const label = document.createElement('span');
     label.className = 'vf-up-category-name';
     label.textContent = category.name;
-    anchor.append(image, label);
+    poster.append(art, callToAction);
+    anchor.append(poster, label);
     return anchor;
   }
 
-  onReady(function () {
-    var grid = document.getElementById('vf-up-category-grid');
-    if (!grid) return;
-    var fallback = document.getElementById('vf-up-category-status');
-    var existing = new Map();
-    grid.querySelectorAll('a.vf-up-category-card').forEach(function (item) {
-      var path = pathname(item.getAttribute('href'));
-      if (path) existing.set(path, item);
-    });
-
-    fetch('/category', {
-      method: 'GET',
-      credentials: 'same-origin',
-      headers: { 'Accept': 'text/html, application/json' }
-    }).then(function (response) {
-      if (!response.ok) throw new Error('Native category endpoint unavailable');
-      return response.text();
-    }).then(function (body) {
-      var markup = body;
-      try {
-        var json = JSON.parse(body);
-        markup = typeof json === 'string' ? json : json.html || '';
-      } catch (_) {}
-      var categories = categoryLinks(markup);
-      if (!categories.length) throw new Error('No categories returned');
-      var fragment = document.createDocumentFragment();
-      categories.forEach(function (category) {
-        fragment.appendChild(categoryCard(category, existing));
-      });
-      grid.replaceChildren(fragment);
-      if (fallback) fallback.hidden = true;
-    }).catch(function () {
-      // Preserve merchant-configured, server-rendered category cards on failure.
-      if (fallback) {
-        fallback.hidden = grid.childElementCount !== 0;
-        if (!fallback.hidden) fallback.textContent = 'الأقسام غير متاحة حاليًا';
+  function setupHeader() {
+    const menuButton = byId('vf-menu-toggle');
+    const navigation = byId('vf-primary-menu');
+    const searchButton = byId('vf-search-toggle');
+    const searchPanel = byId('vf-search-panel');
+    const closeMenu = () => {
+      navigation?.classList.remove('vf-open');
+      menuButton?.setAttribute('aria-expanded', 'false');
+    };
+    menuButton?.addEventListener('click', () => {
+      const isOpen = navigation.classList.toggle('vf-open');
+      menuButton.setAttribute('aria-expanded', String(isOpen));
+      if (isOpen) {
+        searchPanel?.classList.remove('vf-search-open');
+        searchButton?.setAttribute('aria-expanded', 'false');
       }
     });
+    searchButton?.addEventListener('click', () => {
+      const isOpen = searchPanel.classList.toggle('vf-search-open');
+      searchButton.setAttribute('aria-expanded', String(isOpen));
+      if (isOpen) {
+        closeMenu();
+        searchPanel.querySelector('input')?.focus();
+      }
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        closeMenu();
+        searchPanel?.classList.remove('vf-search-open');
+        searchButton?.setAttribute('aria-expanded', 'false');
+      }
+    });
+    navigation?.addEventListener('click', event => {
+      if (event.target.closest('a')) closeMenu();
+    });
+  }
+
+  whenReady(() => {
+    setupHeader();
+    const grid = byId('vf-up-category-grid');
+    if (!grid) return;
+    const status = byId('vf-up-category-status');
+    const savedMedia = mediaIndex(grid);
+
+    fetch('/category', { method: 'GET', credentials: 'same-origin',
+      headers: { 'Accept': 'text/html, application/json' } })
+      .then(response => {
+        if (!response.ok) throw new Error('Category endpoint unavailable');
+        return response.text();
+      })
+      .then(body => {
+        const unique = new Set();
+        const categories = parseCategories(body).filter(category => {
+          if (unique.has(category.path)) return false;
+          unique.add(category.path);
+          return true;
+        });
+        if (!categories.length) throw new Error('No categories in response');
+        const fragment = document.createDocumentFragment();
+        for (const category of categories) {
+          const image = category.image || savedMedia.byPath.get(category.path) ||
+            savedMedia.byName.get(categoryName(category.name)) || '';
+          fragment.appendChild(renderCard(category, image));
+        }
+        grid.replaceChildren(fragment);
+        if (status) status.hidden = true;
+      })
+      .catch(() => {
+        // The merchant's server-rendered cards remain usable while offline.
+        if (status && !grid.childElementCount) {
+          status.hidden = false;
+          status.textContent = 'الأقسام غير متاحة حاليًا';
+        }
+      });
   });
 })();
