@@ -1,0 +1,44 @@
+name: Vaultfy Twig demo visual smoke
+
+on:
+  push:
+    branches: [up-store-vaultfy-rebuild]
+  workflow_dispatch:
+
+jobs:
+  demo-screenshots:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+      - name: Install Twig
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Start sample Twig theme
+        run: |
+          php -S 127.0.0.1:8765 -t . > /tmp/vaultfy-sample-php.log 2>&1 &
+          echo $! > /tmp/vaultfy-sample-php.pid
+          sleep 3
+          curl -fsS http://127.0.0.1:8765/ -o /tmp/vaultfy-sample-home.html
+      - name: Render representative desktop and mobile screenshots
+        run: |
+          mkdir -p preview
+          BROWSER=$(command -v google-chrome || command -v chromium-browser || command -v chromium || true)
+          if [ -z "$BROWSER" ]; then echo 'No headless browser on runner'; exit 1; fi
+          "$BROWSER" --headless --no-sandbox --disable-gpu --hide-scrollbars \
+            --virtual-time-budget=8000 --window-size=1440,1100 \
+            --screenshot=preview/vaultfy-demo-desktop-1440.png http://127.0.0.1:8765/
+          "$BROWSER" --headless --no-sandbox --disable-gpu --hide-scrollbars \
+            --virtual-time-budget=8000 --window-size=390,844 \
+            --screenshot=preview/vaultfy-demo-mobile-390.png http://127.0.0.1:8765/
+      - name: Upload sample-render screenshots (not live-store proof)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vaultfy-twig-demo-screenshots
+          path: preview/*.png
+          retention-days: 7
+          if-no-files-found: error
