@@ -1,37 +1,36 @@
 {% extends "layout/main.twig" %}
-{% block title %}Vaultfy{% endblock %}
+{% block title %}{{ getFunction('getCurrentChannel').name|default('Vaultfy') }}{% endblock %}
 
 {% block main_content %}
 <div class="home vf-up" id="vf-up-home">
-    {# UP Store reference: a wide hero followed by image-first, three-across categories.
-       Images and links come exclusively from merchant-managed Twsaa content. #}
     <div class="vf-up-inner">
+        {# The wide hero always uses the image, schedule and link from the platform. #}
         {% for content in homeContent %}
-            {% if (content['slug'] == 'fixed_banner' or content['slug'] == 'wide_banner') and content['settings']['image'] %}
-                <section class="vf-up-hero">
+            {% if (content['slug'] == 'fixed_banner' or content['slug'] == 'wide_banner')
+                and content['settings']['image'] %}
+                <section class="vf-up-hero" aria-label="{{ lang == 'ar' ? 'عروض المتجر' : 'Store promotions' }}">
                     {% include 'custom/bold-banner.twig' with {'content': content} %}
                 </section>
             {% endif %}
         {% endfor %}
-        <section class="vf-up-section" aria-labelledby="vf-up-categories-heading">
-            <div class="vf-up-section-heading">
-                <h2 id="vf-up-categories-heading">{{ lang == 'ar' ? 'تصفح الأقسام' : 'Browse categories' }}</h2>
-                <p>{{ lang == 'ar' ? 'اختر منصتك المفضلة' : 'Find your next subscription' }}</p>
-            </div>
+
+        <section class="vf-up-section" aria-label="{{ lang == 'ar' ? 'أقسام المتجر' : 'Store categories' }}">
             <div class="vf-up-category-grid" id="vf-up-category-grid">
-                {# Server-rendered image-rich fallback while native categories load.
-                   Images correspond to admin-configured list_of_items blocks only. #}
+                {# Artist-supplied media fallback, indexed by category link/name.
+                   Live /category response supplies the authoritative categories
+                   and their links. Never use competitor artwork or mocked prices. #}
                 {% for content in homeContent %}
                     {% if content['slug'] == 'list_of_items' %}
                         {% for item in content['settings']['items'] %}
                             {% if item['link'] and item['name'] %}
-                                <a class="vf-up-category-card" href="{{ item['link'] }}" data-up-category-link="{{ item['link'] }}">
-                                    <span class="vf-up-category-image">
-                                        {% if item['image'] %}
-                                            <img src="{{ item['image'] }}" loading="lazy" alt="{{ item['name'] }}">
-                                        {% else %}
-                                            <span class="vf-up-category-placeholder" aria-hidden="true">{{ item['name']|slice(0, 1) }}</span>
-                                        {% endif %}
+                                <a class="vf-up-category-card" href="{{ item['link'] }}">
+                                    <span class="vf-up-category-poster">
+                                        <span class="vf-up-category-art{{ not item['image'] ? ' vf-up-no-image' : '' }}">
+                                            {% if item['image'] %}
+                                                <img src="{{ item['image'] }}" alt="{{ item['name'] }}" loading="lazy" decoding="async">
+                                            {% endif %}
+                                        </span>
+                                        <span class="vf-up-category-cta">{{ lang == 'ar' ? 'اضغط هنا' : 'Click here' }}</span>
                                     </span>
                                     <span class="vf-up-category-name">{{ item['name'] }}</span>
                                 </a>
@@ -40,13 +39,14 @@
                     {% endif %}
                 {% endfor %}
             </div>
-            <p id="vf-up-category-status" class="vf-up-empty" hidden></p>
+            <p class="vf-up-empty" id="vf-up-category-status" hidden></p>
         </section>
+
+        {# Preserve merchant-authored optional content when enabled in admin. #}
         {% for content in homeContent %}
             {% if content['slug'] == 'store_features' %}
                 {% include 'custom/store-features.twig' with {'content': content} %}
-            {% endif %}
-            {% if content['slug'] == 'customer_options' %}
+            {% elseif content['slug'] == 'customer_options' %}
                 {% include 'custom/customer-options.twig' with {'content': content} %}
             {% endif %}
         {% endfor %}
@@ -55,18 +55,15 @@
 {% endblock %}
 
 {% block footer_scripts %}
-    <script src="{{ asset_url ~ 'js/vaultfy-up.js' }}" defer></script>
     <script>
-        $(function () {
-            $('.vf-up .owl-carousel').each(function () {
-                if ($.fn.owlCarousel) {
-                    $(this).owlCarousel({
-                        loop: false, margin: 16, autoplay: false, nav: false,
-                        rtl: {{ lang == 'ar' ? 'true' : 'false' }},
-                        responsive: { 0: { items: 1 }, 600: { items: 2 }, 1024: { items: 3 } }
-                    });
-                }
-            });
+      $(function () {
+        $('.vf-up .owl-carousel').each(function () {
+          if ($.fn.owlCarousel) $(this).owlCarousel({
+            loop: false, autoplay: false, nav: false, margin: 16,
+            rtl: {{ lang == 'ar' ? 'true' : 'false' }},
+            responsive: { 0: { items: 1 }, 600: { items: 2 }, 1024: { items: 3 } }
+          });
         });
+      });
     </script>
 {% endblock %}
