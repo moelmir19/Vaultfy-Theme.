@@ -44,7 +44,7 @@ body .header {
 }
 .header .vf-header-leading { justify-self: start; }
 .header .vf-header-trailing { justify-self: end; }
-.header .vf-header-brand { justify-self: center; min-width: 0; }
+.header .vf-header-brand { grid-column: 2; justify-self: center; min-width: 0; }
 .header .vf-header-brand a { display: block; text-align: center; }
 .header .vf-header-brand .logo {
   width: 112px; max-width: 100%; height: auto !important;
@@ -90,7 +90,7 @@ body .header {
 .header .cat-sub a:hover, .header .dropdown-list a:hover { background: #32363d !important; }
 .header .vf-search-panel {
   width: min(350px,27vw); position: absolute;
-  inset-inline-end: auto; inset-inline-start: 0; bottom: 24px; z-index: 20;
+  left: 0; right: auto; bottom: 24px; z-index: 20;
   display: block; 
 }
 .header .vf-search-panel .ui.search { width: 100%; position: relative; }
