@@ -67,7 +67,7 @@ test('UP reference poster geometry stays portrait with three columns on all scre
 test('native categories use merchant image mapping, no fixed products', () => {
   const js = read('assets/js/vaultfy-up.js');
   assert.ok(js.includes("fetch('/category'"));
-  assert.ok(js.includes('parseCategories(body)'));
+  assert.ok(js.includes('parseCategories(body, grid.dataset.storageBase'));
   assert.ok(js.includes('category.image'));
   assert.ok(js.includes('savedMedia.byPath'));
   assert.ok(js.includes('grid.replaceChildren(fragment)'));
