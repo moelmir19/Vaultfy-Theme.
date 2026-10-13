@@ -16,10 +16,11 @@
                     <div class="s-testimonials--slider--img flex-center flex-col gap-2" style="text-align: -webkit-center;">
                         <div
                             class="testimonial__avatar overflow-hidden h-24 w-24 flex z-1 rounded-full transition-shadow duration-500 hover:shadow-default">
-                            <img src="{{ asset_url ~ ('images/') }}{{ review['customer']['gender'] ?? 'other' }}-gender.png"
-                                data-src="{{ asset_url ~ ('images/') }}{{ review['customer']['gender'] ?? 'other' }}-gender.png"
-                                alt="{{ review['name'] }}" claowl-carouselss="w-full h-full object-cover lazy loaded" loading="lazy"
-                                data-ll-status="loaded" width="75" height="75" style="width: 75px">
+                            {# Theme ships no gender avatar files. Use actual customer initial,
+                               not a broken asset URL or an invented reviewer image. #}
+                            <span class="vf-review-avatar-fallback" aria-hidden="true">
+                                {{ review['name']|default('؟')|slice(0, 1) }}
+                            </span>
                         </div>
                         <h4 class="text-lg leading-6 da-tm">
                             {% if content['settings']['hide_user'] != 'true' %}
