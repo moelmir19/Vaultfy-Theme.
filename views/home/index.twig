@@ -4,15 +4,25 @@
 {% block main_content %}
 <div class="home vf-up" id="vf-up-home">
     <div class="vf-up-inner">
-        {# The wide hero always uses the image, schedule and link from the platform. #}
+        {# Choose one active platform-managed banner, as in the reference. #}
+        {% set hero = null %}
+        {% set current_timestamp = "now"|date("U") %}
         {% for content in homeContent %}
-            {% if (content['slug'] == 'fixed_banner' or content['slug'] == 'wide_banner')
+            {% if hero is null and (content['slug'] == 'fixed_banner' or content['slug'] == 'wide_banner')
                 and content['settings']['image'] %}
-                <section class="vf-up-hero" aria-label="{{ lang == 'ar' ? 'عروض المتجر' : 'Store promotions' }}">
-                    {% include 'custom/bold-banner.twig' with {'content': content} %}
-                </section>
+                {% set begins = content['settings']['start_date']|default('') %}
+                {% set ends = content['settings']['end_date']|default('') %}
+                {% if (not begins or begins|date("U") <= current_timestamp)
+                   and (not ends or ends|date("U") >= current_timestamp) %}
+                    {% set hero = content %}
+                {% endif %}
             {% endif %}
         {% endfor %}
+        {% if hero %}
+            <section class="vf-up-hero" aria-label="{{ lang == 'ar' ? 'عروض المتجر' : 'Store promotions' }}">
+                {% include 'custom/bold-banner.twig' with {'content': hero} %}
+            </section>
+        {% endif %}
 
         <section class="vf-up-section" aria-label="{{ lang == 'ar' ? 'أقسام المتجر' : 'Store categories' }}">
             <div class="vf-up-category-grid" id="vf-up-category-grid" data-storage-base="{{ storage_url }}">
