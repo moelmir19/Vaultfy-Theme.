@@ -1,238 +1,72 @@
-
 {% extends "layout/main.twig" %}
-
-{% block title %} main {% endblock %}
+{% block title %}Vaultfy{% endblock %}
 
 {% block main_content %}
-    <div class="home">
-
+<div class="home vf-up" id="vf-up-home">
+    {# UP Store reference: a wide hero followed by image-first, three-across categories.
+       Images and links come exclusively from merchant-managed Twsaa content. #}
+    <div class="vf-up-inner">
         {% for content in homeContent %}
-        {# <pre>{{ dump(content['settings']) }}</pre> #}
-            {% if (('fixed_banner' == content['slug'] or 'wide_banner' == content['slug']) and content['settings']['image'] ) %}
-                {% include 'custom/bold-banner.twig' with {'content': content} %}
+            {% if (content['slug'] == 'fixed_banner' or content['slug'] == 'wide_banner') and content['settings']['image'] %}
+                <section class="vf-up-hero">
+                    {% include 'custom/bold-banner.twig' with {'content': content} %}
+                </section>
             {% endif %}
-            {% if ('youtube' == content['slug'] and content['settings']['youtube_url'] ) %}
-                {% include 'custom/video.twig' with {'content': content} %}
-            {% endif %}
-             {% if ('customer_options' == content['slug']) %}
-                {% include 'custom/customer-options.twig' with {'content': content} %}
-            {% endif %}
-             {% if ('store_features' == content['slug']) %}
+        {% endfor %}
+        <section class="vf-up-section" aria-labelledby="vf-up-categories-heading">
+            <div class="vf-up-section-heading">
+                <h2 id="vf-up-categories-heading">{{ lang == 'ar' ? 'تصفح الأقسام' : 'Browse categories' }}</h2>
+                <p>{{ lang == 'ar' ? 'اختر منصتك المفضلة' : 'Find your next subscription' }}</p>
+            </div>
+            <div class="vf-up-category-grid" id="vf-up-category-grid">
+                {# Server-rendered image-rich fallback while native categories load.
+                   Images correspond to admin-configured list_of_items blocks only. #}
+                {% for content in homeContent %}
+                    {% if content['slug'] == 'list_of_items' %}
+                        {% for item in content['settings']['items'] %}
+                            {% if item['link'] and item['name'] %}
+                                <a class="vf-up-category-card" href="{{ item['link'] }}" data-up-category-link="{{ item['link'] }}">
+                                    <span class="vf-up-category-image">
+                                        {% if item['image'] %}
+                                            <img src="{{ item['image'] }}" loading="lazy" alt="{{ item['name'] }}">
+                                        {% else %}
+                                            <span class="vf-up-category-placeholder" aria-hidden="true">{{ item['name']|slice(0, 1) }}</span>
+                                        {% endif %}
+                                    </span>
+                                    <span class="vf-up-category-name">{{ item['name'] }}</span>
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <p id="vf-up-category-status" class="vf-up-empty" hidden></p>
+        </section>
+        {% for content in homeContent %}
+            {% if content['slug'] == 'store_features' %}
                 {% include 'custom/store-features.twig' with {'content': content} %}
             {% endif %}
-             {% if ('brands' == content['slug']) %}
-                {% include 'custom/brands.twig' with {'content': content} %}
-            {% endif %}
-            {% if ('list_of_items' == content['slug']) %}
-                {% if ('slider' == content['settings']['type']) %}
-                    {% include 'custom/list-of-items-slider.twig' with {'content': content} %}
-                {% else %}
-                    {% include 'custom/list-of-items.twig' with {'content': content} %}
-                {% endif %}
-            {% endif %}
-
-             {% if ('fixed_products' == content['slug']) %}
-                {% if ('chosen_products' == content['settings']['list_type'] and content['settings']['sku_text']) %}
-                    {# <pre>{{ dump(content['settings']['products']) }}</pre> #}
-                
-                    <div class="load-products container mt-50" 
-                    data-id="{{ content['block_id'] }}" 
-                    data-title="{{ content['settings']['products_title'] }}" 
-                    data-link="{{ content['settings']['link'] is not empty ? content['settings']['link'] : '/products' }}"
-                    data-products="{{ content['settings']['products'] }}"
-                    data-limit="{{ content['settings']['limit'] }}" 
-                    data-ids="{{ content['settings']['ids'] }}" 
-                    data-type="{{ content['settings']['type'] }}">
-                    </div>
-
-                {% elseif ('category' == content['settings']['list_type'] and content['settings']['category_id']) %}
-
-                    <div class="load-products container mt-50" 
-                    data-id="{{ content['block_id'] }}" 
-                    data-title="{{ content['settings']['products_title'] }}" 
-                    data-link="{{ content['settings']['link'] is not empty ? content['settings']['link'] : '' }}" 
-                    data-products="{{ content['settings']['products'] }}" 
-                    data-limit="{{ content['settings']['limit'] }}" 
-                    data-ids="{{ content['settings']['ids'] }}" 
-                    data-type="{{ content['settings']['type'] }}">
-                    </div>
-                    
-                {% elseif ('featured_products' == content['settings']['list_type']) %}
-                    <div class="load-products container mt-50" 
-                    data-id="{{ content['block_id'] }}" 
-                    data-title="{{ content['settings']['products_title'] }}" 
-                    data-link="{{ content['settings']['link'] is not empty ? content['settings']['link'] : '/products' }}" 
-                    data-products="{{ content['settings']['products'] }}" 
-                    data-limit="{{ content['settings']['limit'] }}" 
-                    data-ids="{{ content['settings']['ids'] }}" 
-                    data-type="{{ content['settings']['type'] }}">
-                    </div>
-                    
-                {% elseif ('discounted_products' == content['settings']['list_type']) %}
-                    <div class="load-products container mt-50" 
-                    data-id="{{ content['block_id'] }}" 
-                    data-title="{{ content['settings']['products_title'] }}" 
-                    data-link="{{ content['settings']['link'] is not empty ? content['settings']['link'] : '/products' }}" 
-                    data-products="{{ content['settings']['products'] }}" 
-                    data-limit="{{ content['settings']['limit'] }}" 
-                    data-ids="{{ content['settings']['ids'] }}" 
-                    data-type="{{ content['settings']['type'] }}">
-                    </div>
-                {% elseif ('most_sales' == content['settings']['list_type']) %}
-                    <div class="load-products container mt-50" 
-                    data-id="{{ content['block_id'] }}" 
-                    data-title="{{ content['settings']['products_title'] }}" 
-                    data-link="{{ content['settings']['link'] is not empty ? content['settings']['link'] : '/products' }}" 
-                    data-products="{{ content['settings']['products'] }}" 
-                    data-limit="{{ content['settings']['limit'] }}" 
-                    data-ids="{{ content['settings']['ids'] }}" 
-                    data-type="{{ content['settings']['type'] }}">
-                    </div>
-                    
-                {% elseif ('latest_products' == content['settings']['list_type']) %}
-                    <div class="load-products container mt-50" 
-                    data-id="{{ content['block_id'] }}" 
-                    data-title="{{ content['settings']['products_title'] }}" 
-                    data-link="{{ content['settings']['link'] is not empty ? content['settings']['link'] : '/products' }}" 
-                    data-products="{{ content['settings']['products'] }}" data-limit="{{ content['settings']['limit'] }}" 
-                    data-ids="{{ content['settings']['ids'] }}" 
-                    data-type="{{ content['settings']['type'] }}">
-                    </div>
-                    
-                {% endif %}
+            {% if content['slug'] == 'customer_options' %}
+                {% include 'custom/customer-options.twig' with {'content': content} %}
             {% endif %}
         {% endfor %}
     </div>
-
+</div>
 {% endblock %}
-
 
 {% block footer_scripts %}
-    {# <script>
-        $( window ).resize(function() {
-            $('.s-slider').slick('resize');
-        });
-    </script> #}
+    <script src="{{ asset_url ~ 'js/vaultfy-up.js' }}" defer></script>
     <script>
-        $('.owl-carousel').hide();
-        $('.product-group').hide();
-        $(document).ready(function(){
-            $(".owl-carousel").owlCarousel({
-                loop: false,
-                autoplay: true,
-                autoplayTimeout: 5000,
-                autoWidth: true,
-                rewind: true,
-                margin: 15,
-                nav: true,
-                rtl: {{ lang ? 'true' : 'false' }},
-            });
-            setTimeout(() => {
-                $('#block{{ content['block_id'] }} .product-group-arrow-prev').click(function() {
-                    $('#block{{ content['block_id'] }} .owl-prev').click();
-                })
-    
-                $('#block{{ content['block_id'] }} .product-group-arrow-next').click(function() {
-                    $('#block{{ content['block_id'] }} .owl-next').click();
-                })
-            }, 1000);
-            $('#block{{ content['block_id'] }} .product-group').slideDown();
-        });
-    </script>
-    <script>
-        $(document).ready(function() {
-                var width = document.body.clientWidth;
-    
-                perView = 1;
-    
-                var swiper = new Swiper(".myListSwiper", {
-                    slidesPerView: perView,
-                    autoplay: {
-                        delay: 1000,
-                    },
-                    navigation: {
-                        nextEl: ".s-slider-next",
-                        prevEl: ".s-slider-prev",
-                    },
-                });
-            });
-    </script>
-    <script>
-        $('.owl-carousel').hide();
-        $('.product-group').hide();
-        setTimeout(() => {
-            $('.product-slider').owlCarousel({
-                loop: false,
-                autoplay: true,
-                autoplayTimeout: 5000,
-                autoWidth: true,
-                rewind: true,
-                margin: 15,
-                nav: true,
-                rtl: {{ lang ? 'true' : 'false' }},
-            });
-
-            setTimeout(() => {
-                $('.product-group-arrow-prev').click(function() {
-                    $('.owl-prev').click();
-                })
-
-                $('.product-group-arrow-next').click(function() {
-                    $(' .owl-next').click();
-                })
-            }, 1000);
-
-            $('.product-group').slideDown();
-            $('.owl-carousel').fadeIn();
-        }, 3000);
-    </script>
-    <script>
-    $(document).ready(function () {
-    $('.load-products').each(function () {
-        let block = $(this);
-        
-        // 1. Capture the variables from the data-attributes of the current block
-        let blockId = block.data('id');
-        let blockType = block.data('type');
-        let blockLimit = block.data('limit');
-
-        // 2. Perform the AJAX call
-        $.ajax({
-            url: '/fetch-home-products', 
-            method: 'GET',
-            data: {
-                id: blockId,    // Using the variable we just defined
-                type: blockType,
-                limit: blockLimit
-            },
-            success: function (response) {
-                // Inject the HTML fragment from Twig
-                block.html(response);
-
-                // 3. Initialize Owl Carousel if it's a slider
-                if (blockType === 'slider') {
-                    let sliderSelector = $('#slider' + blockId);
-                    
-                    if ($.fn.owlCarousel) {
-                        sliderSelector.owlCarousel({
-                            loop: false,
-                            autoplay: true,
-                            autoplayTimeout: 4000,
-                            autoWidth: true,
-                            margin: 15,
-                            nav: false,
-                            rtl: {{ lang ? 'true' : 'false' }}
-                        });
-                    }
+        $(function () {
+            $('.vf-up .owl-carousel').each(function () {
+                if ($.fn.owlCarousel) {
+                    $(this).owlCarousel({
+                        loop: false, margin: 16, autoplay: false, nav: false,
+                        rtl: {{ lang == 'ar' ? 'true' : 'false' }},
+                        responsive: { 0: { items: 1 }, 600: { items: 2 }, 1024: { items: 3 } }
+                    });
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error("AJAX Error: " + error);
-            }
+            });
         });
-        });
-    });
     </script>
 {% endblock %}
-
-    
