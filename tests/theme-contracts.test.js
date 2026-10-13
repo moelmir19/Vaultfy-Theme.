@@ -49,44 +49,44 @@ test('archived competitor HTML/cookies are not committed', () => {
   assert.equal(fs.existsSync(path.join(root, 'hts-cache')), false);
 });
 
-test('UP reference poster geometry stays portrait with three columns at every viewport', () => {
+test('UP reference poster geometry stays portrait with three columns on all screens', () => {
   const css = read('assets/css/vaultfy-up.css');
   const home = read('views/home/index.twig');
-  assert.match(css, /\\.vf-up-category-poster\\s*\\{/);
-  assert.match(css, /aspect-ratio:\\s*\\.73\\s*\\/\\s*1/);
-  assert.match(css, /\\.vf-up-category-cta\\s*\\{/);
-  assert.match(css, /clip-path:\\s*polygon/);
-  assert.match(css, /@media\\s*\\(max-width:\\s*767px\\)/);
-  assert.match(css, /@media\\s*\\(max-width:\\s*359px\\)/);
-  assert.match(css, /grid-template-columns:\\s*repeat\\(3,\\s*minmax\\(0,\\s*1fr\\)\\)/);
-  assert.doesNotMatch(css, /grid-template-columns:\\s*repeat\\(2,/);
-  assert.match(home, /vf-up-category-cta/);
-  assert.match(home, /item\\['image'\\]/);
+  assert.ok(css.includes('.vf-up-category-poster {'));
+  assert.ok(css.includes('aspect-ratio: .73 / 1'));
+  assert.ok(css.includes('.vf-up-category-cta {'));
+  assert.ok(css.includes('clip-path: polygon'));
+  assert.ok(css.includes('max-width: 767px'));
+  assert.ok(css.includes('max-width: 359px'));
+  assert.ok(css.includes('grid-template-columns: repeat(3,minmax(0,1fr))'));
+  assert.ok(!css.includes('grid-template-columns: repeat(2'));
+  assert.ok(home.includes('vf-up-category-cta'));
+  assert.ok(home.includes("item['image']"));
 });
 
-test('native category navigation drives live names and URLs, never fixed product data', () => {
+test('native categories use merchant image mapping, no fixed products', () => {
   const js = read('assets/js/vaultfy-up.js');
-  assert.match(js, /fetch\\('\\/category'/);
-  assert.match(js, /parseCategories\\(body\\)/);
-  assert.match(js, /category\\.image/);
-  assert.match(js, /savedMedia\\.byPath/);
-  assert.match(js, /grid\\.replaceChildren\\(fragment\\)/);
-  assert.doesNotMatch(js, /Netflix|Shahid|ChatGPT|OSN/);
-  assert.doesNotMatch(js, /vf-up-category-placeholder/);
+  assert.ok(js.includes("fetch('/category'"));
+  assert.ok(js.includes('parseCategories(body)'));
+  assert.ok(js.includes('category.image'));
+  assert.ok(js.includes('savedMedia.byPath'));
+  assert.ok(js.includes('grid.replaceChildren(fragment)'));
+  assert.ok(!/Netflix|Shahid|ChatGPT|OSN/.test(js));
+  assert.ok(!js.includes('vf-up-category-placeholder'));
 });
 
-test('Vaultfy header is centered, mobile navigation is toggleable and search stays native', () => {
+test('Vaultfy mobile header preserves the official account, cart and search wiring', () => {
   const header = read('views/layout/header.twig');
   const css = read('assets/css/vaultfy-up.css');
   const main = read('views/layout/main.twig');
-  assert.match(header, /images\\/vaultfy-logo\\.webp/);
-  assert.match(header, /vf-menu-toggle/);
-  assert.match(header, /vf-search-toggle/);
-  assert.match(header, /class="ui search"/);
-  assert.match(header, /getFunction\\('cartItemsCount'\\)/);
-  assert.match(header, /include 'layout\\/navbar.twig'/);
-  assert.match(css, /\\.vf-primary-menu\\.vf-open/);
-  assert.match(css, /\\.vf-search-panel\\.vf-search-open/);
-  assert.match(main, /js\\/vaultfy-up\\.js/);
-  assert.equal(fs.existsSync(path.join(root, 'assets/images/vaultfy-logo.webp')), true);
+  assert.ok(header.includes('images/vaultfy-logo.webp'));
+  assert.ok(header.includes('vf-menu-toggle'));
+  assert.ok(header.includes('vf-search-toggle'));
+  assert.ok(header.includes('class="ui search"'));
+  assert.ok(header.includes("getFunction('cartItemsCount')"));
+  assert.ok(header.includes("include 'layout/navbar.twig'"));
+  assert.ok(css.includes('.vf-primary-menu.vf-open'));
+  assert.ok(css.includes('.vf-search-panel.vf-search-open'));
+  assert.ok(main.includes('js/vaultfy-up.js'));
+  assert.equal(fs.existsSync(path.join(root,'assets/images/vaultfy-logo.webp')),true);
 });
