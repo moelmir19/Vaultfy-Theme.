@@ -15,7 +15,7 @@
         {% endfor %}
 
         <section class="vf-up-section" aria-label="{{ lang == 'ar' ? 'أقسام المتجر' : 'Store categories' }}">
-            <div class="vf-up-category-grid" id="vf-up-category-grid">
+            <div class="vf-up-category-grid" id="vf-up-category-grid" data-storage-base="{{ storage_url }}">
                 {# Artist-supplied media fallback, indexed by category link/name.
                    Live /category response supplies the authoritative categories
                    and their links. Never use competitor artwork or mocked prices. #}
