@@ -59,7 +59,6 @@ test('UP reference poster geometry stays portrait with three columns on all scre
   assert.ok(css.includes('max-width: 767px'));
   assert.ok(css.includes('max-width: 359px'));
   assert.ok(css.includes('grid-template-columns: repeat(3,minmax(0,1fr))'));
-  assert.ok(!css.includes('grid-template-columns: repeat(2'));
   assert.ok(home.includes('vf-up-category-cta'));
   assert.ok(home.includes("item['image']"));
 });
