@@ -22,6 +22,7 @@ $files = [
     'views/layout/navbar.twig',
     'views/home/index.twig',
     'views/custom/bold-banner.twig',
+    'views/custom/customer-options.twig',
     'views/products/list/card.twig',
     'views/products/view.twig',
     'views/products/category.twig',
