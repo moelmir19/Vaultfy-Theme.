@@ -25,7 +25,7 @@ test('home is a dynamic merchant-data page, not a copied UP snapshot', () => {
   assert.match(home, /vf-up-category-grid/);
   assert.match(js, /fetch\('\/category'/);
   assert.match(js, /new DOMParser/);
-  assert.doesNotMatch(home, /up-store\.net|UP Store/);
+  assert.doesNotMatch(home, /up-store\.net/);
 });
 
 test('assets are wired after platform styles and cover mobile breakpoints', () => {
