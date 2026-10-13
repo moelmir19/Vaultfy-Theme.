@@ -1,21 +1,25 @@
+{# Merchant-controlled banner. Never replace its image/link with competitor assets. #}
 {% if content['settings']['image'] %}
-    {% if content['settings']['link'] %}
-        <a id="block{{ content['block_id'] }}" href="{{ content['settings']['link'] }}">
+    {% set start_date = content['settings']['start_date']|default('') %}
+    {% set end_date = content['settings']['end_date']|default('') %}
+    {% set current_time = "now"|date("U") %}
+    {% set in_window = true %}
+
+    {% if start_date and current_time < start_date|date("U") %}
+        {% set in_window = false %}
+    {% endif %}
+    {% if end_date and current_time > end_date|date("U") %}
+        {% set in_window = false %}
     {% endif %}
 
-    {% if content['settings']['start_date'] and content['settings']['start_date'] != '' and content['settings']['end_date'] and content['settings']['end_date'] != '' %}
-        {% if "now"|date > content['settings']['start_date'] and "now"|date < content['settings']['end_date'] %}
-            <img class="w-100 mb-40" src="{{ content['content']['settings']['image'] }}" alt="Banner" />
+    {% if in_window %}
+        {% if content['settings']['link'] %}
+            <a id="block{{ content['block_id'] }}" href="{{ content['settings']['link'] }}">
         {% endif %}
-    {% elseif content['settings']['start_date'] and content['settings']['start_date'] != '' and (content['settings']['end_date'] == '' or content['settings']['end_date'] == '') %}
-        {% if "now"|date > setting['start_date'] %}
-            <img class="w-100 mb-40" src="{{ content['settings']['image'] }}" alt="Banner" />
+        <img class="w-100" src="{{ content['settings']['image'] }}" loading="eager"
+             alt="{{ content['settings']['alt']|default('Vaultfy') }}">
+        {% if content['settings']['link'] %}
+            </a>
         {% endif %}
-    {% else %}
-        <img class="w-100 mb-40" src="{{ content['settings']['image'] }}" alt="Banner" />
-    {% endif %}
-   
-    {% if content['settings']['link'] %}
-    </a>
     {% endif %}
 {% endif %}
