@@ -32,7 +32,15 @@
     } catch (_) { return ''; }
   }
 
-  function parseCategories(body) {
+  function nativeCategoryImage(value, cdnBase) {
+    if (!value) return '';
+    const direct = String(value);
+    if (/^https?:\/\//i.test(direct)) return safeImage(direct);
+    if (/^(?:data:|javascript:|\/\/)/i.test(direct)) return '';
+    return safeImage(cdnBase.replace(/\/$/, '') + '/' + direct.replace(/^\//, ''));
+  }
+
+  function parseCategories(body, cdnBase) {
     let response;
     try { response = JSON.parse(body); } catch (_) { response = body; }
     let raw = response;
@@ -43,8 +51,7 @@
       return raw.filter(cat => cat && cat.status !== 0).map(cat => ({
         path: pathname(cat.url || cat.link || ('/' + (cat.url_path || cat.slug || ''))),
         name: String(cat.name || cat.title || '').trim(),
-        image: safeImage(cat.image_url || cat.category_image_url ||
-          (cat.image && /^https?:\/\//.test(cat.image) ? cat.image : ''))
+        image: nativeCategoryImage(cat.image_url || cat.category_image_url || cat.image, cdnBase)
       })).filter(cat => cat.name && cat.path);
     }
     const doc = new DOMParser().parseFromString(String(raw || ''), 'text/html');
@@ -53,7 +60,7 @@
     return links.map(link => ({
       path: pathname(link.getAttribute('href')),
       name: (link.textContent || '').trim().replace(/\s+/g, ' '),
-      image: safeImage(link.dataset.image || link.querySelector('img')?.getAttribute('src') || '')
+      image: nativeCategoryImage(link.dataset.image || link.querySelector('img')?.getAttribute('src') || '', cdnBase)
     })).filter(cat => cat.path && cat.name);
   }
 
@@ -156,7 +163,7 @@
       })
       .then(body => {
         const unique = new Set();
-        const categories = parseCategories(body).filter(category => {
+        const categories = parseCategories(body, grid.dataset.storageBase || '').filter(category => {
           if (unique.has(category.path)) return false;
           unique.add(category.path);
           return true;
